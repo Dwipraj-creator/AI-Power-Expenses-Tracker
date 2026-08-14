@@ -6,6 +6,7 @@ const authRoute = require('./routes/authRoutes');
 const session = require('express-session');
 const passport = require('./config/passport');
 const expenseRoute = require('./routes/expenseRoutes');
+const aiRoute = require('./routes/aiRoutes');
 
 const app = express();
 
@@ -28,6 +29,8 @@ app.use(passport.initialize());
 app.use('/api/auth', authRoute);
 
 app.use('/api/expenses', expenseRoute);
+
+app.use("/api/ai",aiRoute)
 
 app.get('/', (req, res) => {
   res.send('Expense Tracker API running');
