@@ -131,3 +131,37 @@ textarea:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
 }
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+
+@keyframes ray-shoot {
+  0% {
+    opacity: 0.9;
+    transform: scaleY(0.3);
+  }
+  70% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(1);
+  }
+}
+
+.ray {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 55px;
+  background: linear-gradient(to top, rgba(96, 165, 250, 0.9), transparent);
+  transform-origin: bottom center;
+  animation: ray-shoot 1.6s ease-out infinite;
+}

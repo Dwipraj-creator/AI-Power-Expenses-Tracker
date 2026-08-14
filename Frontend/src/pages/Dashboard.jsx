@@ -10,6 +10,7 @@ import {
   YAxis,
   ResponsiveContainer,
   Tooltip,
+  Cell
 } from "recharts";
 import {
   ShieldCheck,
@@ -19,9 +20,11 @@ import {
   Tag,
   FileText,
   Mic,
+  MicOff,
 } from "lucide-react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import { useWakeWord } from "../hooks/useWakeWord";
 import Sidebar from "../components/Sidebar";
 import VoiceOrb from "../components/VoiceOrb";
 
@@ -45,6 +48,7 @@ const CATEGORY_COLORS = {
 };
 
 const Dashboard = () => {
+ 
   const { user } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +59,19 @@ const Dashboard = () => {
     description: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [lastCommand, setLastCommand] = useState("");
+
+  const { sessionActive, status, startSession, stopSession, isSupported } = useWakeWord({
+    onWake: () => {
+      // instant canned acknowledgment — voice output wired in a later step
+      console.log(`Yes, ${user?.name}?`);
+    },
+    onCommand: (text) => {
+      console.log("Captured command:", text);
+      setLastCommand(text);
+      // next step: send this to Gemini for parsing
+    },
+  });
 
   const fetchExpenses = async () => {
     try {
@@ -157,32 +174,31 @@ const Dashboard = () => {
       : 0;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white flex">
+    <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col md:flex-row">
       <Sidebar />
 
       <div className="flex-1 relative overflow-hidden">
         {/* Background layer */}
         <div className="absolute inset-0 bg-grid pointer-events-none opacity-40" />
-        <div className="orb w-96 h-96 bg-indigo-600 top-[-100px] left-[-100px] pointer-events-none" />
+        <div className="orb w-48 h-48 md:w-96 md:h-96 bg-indigo-600 top-[-50px] md:top-[-100px] left-[-50px] md:left-[-100px] pointer-events-none" />
         <div
-          className="orb w-96 h-96 bg-purple-600 bottom-[-100px] right-[-50px] pointer-events-none"
+          className="orb w-48 h-48 md:w-96 md:h-96 bg-purple-600 bottom-[-50px] md:bottom-[-100px] right-[-50px] md:right-[-50px] pointer-events-none"
           style={{ animationDelay: "3s" }}
         />
 
-        <div className="relative z-10 p-8">
+        <div className="relative z-10 p-4 sm:p-6 md:p-8 overflow-y-auto">
           {/* Top bar */}
-          <div className="flex items-center justify-between mb-8 animate-slide-up">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8 animate-slide-up">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                Welcome back,{" "}
-                <span className="text-indigo-300">{user?.name}</span>
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                Welcome, <span className="text-indigo-300">{user?.name}</span>
               </h1>
-              <p className="text-gray-400 text-sm mt-2">
-                Manage your expenses with AI assistance
+              <p className="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2">
+                Manage your expenses with AI
               </p>
             </div>
-            <span className="flex items-center gap-2 text-xs bg-gradient-to-r from-emerald-500/20 to-emerald-500/10 border border-emerald-500/40 px-4 py-2 rounded-full text-emerald-300 font-medium shadow-lg shadow-emerald-500/10">
-              <ShieldCheck size={14} /> AI-Powered
+            <span className="flex items-center gap-2 text-xs bg-gradient-to-r from-emerald-500/20 to-emerald-500/10 border border-emerald-500/40 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-emerald-300 font-medium shadow-lg shadow-emerald-500/10 whitespace-nowrap">
+              <ShieldCheck size={12} /> AI-Powered
             </span>
           </div>
 
@@ -192,28 +208,49 @@ const Dashboard = () => {
             </p>
           )}
 
-          <div className="grid lg:grid-cols-3 gap-6 animate-slide-up">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 animate-slide-up">
             {/* Center: AI orb + quick add + expense list */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               {/* Voice Assistant Card - Highlighted */}
-              <div className="bg-gradient-to-br from-[#111118] to-[#0f0f15] border border-indigo-500/30 rounded-2xl p-10 flex flex-col items-center text-center shadow-2xl shadow-indigo-600/20 hover:border-indigo-500/50 transition-all duration-300">
-                <div className="mb-6">
-                  <VoiceOrb />
-                </div>
-                <h2 className="text-xl font-bold text-white mb-2">
-                  Voice-Powered Assistant
-                </h2>
-                <p className="text-gray-400 text-sm max-w-lg leading-relaxed">
-                  Coming soon: Add expenses hands-free using your voice. For
-                  now, use the form below to track your spending.
-                </p>
+              <div className="bg-gradient-to-br from-[#111118] to-[#0f0f15] border border-indigo-500/30 rounded-2xl p-6 sm:p-10 flex flex-col items-center text-center shadow-2xl shadow-indigo-600/20 hover:border-indigo-500/50 transition-all duration-300">
+
+<div className="mb-4 sm:mb-6 scale-75 sm:scale-100 origin-top">
+  <VoiceOrb
+    status={status}
+    onClick={() => {
+      if (!isSupported) return;
+      sessionActive ? stopSession() : startSession();
+    }}
+  />
+</div>
+<h2 className="text-lg sm:text-xl font-bold text-white mb-2">
+  Voice Assistant
+</h2>
+<p className="text-gray-400 text-xs sm:text-sm max-w-lg leading-relaxed">
+  {!isSupported
+    ? "Voice recognition is not supported in this browser. Try Chrome."
+    : status === "idle"
+    ? 'Tap the orb to start — then say "Jarvis" to give a command.'
+    : status === "waiting-for-wake"
+    ? 'Listening for "Jarvis"... (tap to stop)'
+    : "Listening to your command..."}
+</p>
+
+{lastCommand && (
+  <p className="mt-2 text-xs text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded-lg px-3 py-1.5">
+    Heard: "{lastCommand}"
+  </p>
+)}
 
                 {/* Quick Add Form */}
-                <form onSubmit={handleSubmit} className="w-full mt-8 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <form
+                  onSubmit={handleSubmit}
+                  className="w-full mt-6 sm:mt-8 space-y-3 sm:space-y-4"
+                >
+                  <div className="grid grid-cols-1 gap-3">
                     <div className="relative">
-                      <label className="text-xs font-semibold text-gray-400 mb-2 block">
-                        Amount (₹)
+                      <label className="text-xs font-semibold text-gray-400 mb-1.5 sm:mb-2 block">
+                        Amount
                       </label>
                       <input
                         type="number"
@@ -226,7 +263,7 @@ const Dashboard = () => {
                       />
                     </div>
                     <div className="relative">
-                      <label className="text-xs font-semibold text-gray-400 mb-2 block">
+                      <label className="text-xs font-semibold text-gray-400 mb-1.5 sm:mb-2 block">
                         Category
                       </label>
                       <select
@@ -260,35 +297,28 @@ const Dashboard = () => {
                       className="w-full bg-[#0a0a0f] border border-white/10 focus:border-indigo-500/50 rounded-lg px-4 py-2.5 text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
                     />
                   </div>
-                  <div className="flex gap-3 pt-2">
+                  <div className="flex gap-2 sm:gap-3 pt-2">
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-indigo-600/50 disabled:to-purple-600/50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg shadow-lg shadow-indigo-600/40 transition-all duration-200"
+                      className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-indigo-600/50 disabled:to-purple-600/50 disabled:cursor-not-allowed text-white font-semibold py-2 sm:py-3 rounded-lg text-sm sm:text-base shadow-lg shadow-indigo-600/40 transition-all duration-200"
                     >
-                      <Plus size={16} /> Add Expense
-                    </button>
-                    <button
-                      type="button"
-                      disabled
-                      title="Voice input coming soon"
-                      className="p-3 rounded-lg bg-white/5 border border-white/10 text-gray-500 hover:text-gray-400 transition-all"
-                    >
-                      <Mic size={18} />
+                      <Plus size={14} />{" "}
+                      <span className="hidden sm:inline">Add</span> Expense
                     </button>
                   </div>
                 </form>
               </div>
 
               {/* Expense list */}
-              <div className="bg-[#111118] border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all">
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Wallet size={18} className="text-indigo-400" />
+              <div className="bg-[#111118] border border-white/10 rounded-2xl p-4 sm:p-6 hover:border-white/15 transition-all">
+                <div className="flex items-center justify-between mb-4 sm:mb-5">
+                  <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <Wallet size={16} className="text-indigo-400" />
                     Recent Expenses
                   </h2>
                   {!loading && expenses.length > 0 && (
-                    <span className="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full font-medium">
+                    <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2.5 sm:px-3 py-1 rounded-full font-medium">
                       {expenses.length} total
                     </span>
                   )}
@@ -317,18 +347,18 @@ const Dashboard = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                  <div className="space-y-2 sm:space-y-3 max-h-96 overflow-y-auto pr-2">
                     {expenses.map((exp) => (
                       <div
                         key={exp._id}
-                        className="flex items-center justify-between bg-gradient-to-r from-[#0a0a0f] to-[#0f0f15] border border-white/5 hover:border-indigo-500/30 rounded-lg px-4 py-3 transition-all duration-200 group"
+                        className="flex items-center justify-between bg-gradient-to-r from-[#0a0a0f] to-[#0f0f15] border border-white/5 hover:border-indigo-500/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 transition-all duration-200 group text-sm sm:text-base"
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <span className="flex-shrink-0 text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded-full font-medium">
+                          <span className="flex-shrink-0 text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 sm:px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
                             {exp.category}
                           </span>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-white truncate">
+                            <p className="text-xs sm:text-sm font-medium text-white truncate">
                               {exp.description || "No description"}
                             </p>
                             <p className="text-xs text-gray-500 truncate">
@@ -340,15 +370,15 @@ const Dashboard = () => {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 flex-shrink-0 ml-2">
-                          <span className="font-semibold text-indigo-300 whitespace-nowrap">
+                        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 ml-2">
+                          <span className="font-semibold text-indigo-300 whitespace-nowrap text-xs sm:text-base">
                             ₹{exp.amount.toLocaleString()}
                           </span>
                           <button
                             onClick={() => handleDelete(exp._id)}
-                            className="text-gray-500 hover:text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            className="text-gray-500 hover:text-red-400 hover:bg-red-500/10 p-1 sm:p-1.5 rounded-lg transition-all opacity-0 sm:opacity-0 group-hover:opacity-100 hover:opacity-100"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </div>
@@ -359,27 +389,27 @@ const Dashboard = () => {
             </div>
 
             {/* Right column: charts & stats */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Spend trend */}
-              <div className="bg-[#111118] border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all">
-                <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+              <div className="bg-[#111118] border border-white/10 rounded-2xl p-4 sm:p-6 hover:border-white/15 transition-all">
+                <h3 className="text-xs sm:text-sm font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
                   📊 7-Day Spend Trend
                 </h3>
-                <ResponsiveContainer width="100%" height={140}>
+                <ResponsiveContainer width="100%" height={100}>
                   <LineChart data={spendTrend}>
                     <XAxis
                       dataKey="day"
                       stroke="#6b7280"
-                      fontSize={11}
+                      fontSize={9}
                       tickLine={false}
                       axisLine={false}
                     />
                     <YAxis
                       stroke="#6b7280"
-                      fontSize={11}
+                      fontSize={9}
                       tickLine={false}
                       axisLine={false}
-                      width={35}
+                      width={30}
                     />
                     <Tooltip
                       contentStyle={{
@@ -389,7 +419,7 @@ const Dashboard = () => {
                         boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
                       }}
                       labelStyle={{ color: "#fff" }}
-                      cursorStyle={{ strokeDasharray: "5 5" }}
+                      cursor={{ strokeDasharray: "5 5" }}
                     />
                     <Line
                       type="monotone"
@@ -404,11 +434,11 @@ const Dashboard = () => {
               </div>
 
               {/* Category breakdown */}
-              <div className="bg-[#111118] border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all">
-                <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+              <div className="bg-[#111118] border border-white/10 rounded-2xl p-4 sm:p-6 hover:border-white/15 transition-all">
+                <h3 className="text-xs sm:text-sm font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
                   🏷️ Top Categories
                 </h3>
-                <ResponsiveContainer width="100%" height={160}>
+                <ResponsiveContainer width="100%" height={120}>
                   <BarChart data={categoryBreakdown}>
                     <XAxis
                       dataKey="category"
@@ -439,7 +469,7 @@ const Dashboard = () => {
                       isAnimationActive={true}
                     >
                       {categoryBreakdown.map((entry, i) => (
-                        <Bar
+                        <Cell
                           key={i}
                           dataKey="amount"
                           fill={CATEGORY_COLORS[entry.category] || "#818cf8"}
@@ -451,18 +481,18 @@ const Dashboard = () => {
               </div>
 
               {/* Budget gauge */}
-              <div className="bg-gradient-to-br from-[#111118] to-[#0f0f15] border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all">
-                <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                  💰 Monthly Budget
+              <div className="bg-gradient-to-br from-[#111118] to-[#0f0f15] border border-white/10 rounded-2xl p-4 sm:p-6 hover:border-white/15 transition-all">
+                <h3 className="text-xs sm:text-sm font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                  💰 Budget
                 </h3>
                 {monthlyBudget > 0 ? (
                   <>
-                    <div className="mb-4">
+                    <div className="mb-3 sm:mb-4">
                       <div className="flex justify-between mb-2">
                         <span className="text-xs text-gray-400">
                           Spent this month
                         </span>
-                        <span className="text-sm font-bold text-white">
+                        <span className="text-xs sm:text-sm font-bold text-white">
                           ₹{thisMonthSpent.toLocaleString()}
                         </span>
                       </div>
@@ -502,21 +532,21 @@ const Dashboard = () => {
               </div>
 
               {/* Total spent card */}
-              <div className="bg-gradient-to-br from-indigo-600/20 to-purple-600/20 border border-indigo-500/40 rounded-2xl p-6 hover:border-indigo-500/60 transition-all">
+              <div className="bg-gradient-to-br from-indigo-600/20 to-purple-600/20 border border-indigo-500/40 rounded-2xl p-4 sm:p-6 hover:border-indigo-500/60 transition-all">
                 <p className="text-xs text-indigo-300/70 font-semibold mb-2">
-                  ALL-TIME TOTAL
+                  TOTAL
                 </p>
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className="text-3xl font-bold text-white">
+                    <p className="text-2xl sm:text-3xl font-bold text-white">
                       ₹{total.toLocaleString()}
                     </p>
                     <p className="text-xs text-indigo-300/60 mt-1">
-                      across {expenses.length} expense
+                      {expenses.length} transaction
                       {expenses.length !== 1 ? "s" : ""}
                     </p>
                   </div>
-                  <Wallet size={32} className="text-indigo-400/40" />
+                  <Wallet size={24} className="text-indigo-400/40" />
                 </div>
               </div>
             </div>

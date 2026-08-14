@@ -50,14 +50,16 @@ const Signup = () => {
       {/* Foreground content */}
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Top bar */}
-        <div className="flex items-center justify-between px-6 md:px-8 py-6 border-b border-white/5 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/40">
-              <Sparkles size={20} className="text-white" />
+        <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 py-4 sm:py-6 border-b border-white/5 backdrop-blur-sm">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-9 sm:w-11 h-9 sm:h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/40">
+              <Sparkles size={16} sm:size={20} className="text-white" />
             </div>
             <div>
-              <p className="font-bold leading-tight text-lg">Jervis</p>
-              <p className="text-[9px] tracking-widest text-indigo-300/60 font-semibold">
+              <p className="font-bold leading-tight text-base sm:text-lg">
+                Jervis
+              </p>
+              <p className="text-[8px] sm:text-[9px] tracking-widest text-indigo-300/60 font-semibold">
                 AI-POWERED TRACKING
               </p>
             </div>
@@ -70,38 +72,41 @@ const Signup = () => {
         </div>
 
         {/* Card */}
-        <div className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
           <div className="w-full max-w-md">
             {/* Badge */}
-            <div className="flex justify-center mb-8">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-widest bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-4 py-2 rounded-full">
-                🔐 SECURE AUTHENTICATION
+            <div className="flex justify-center mb-6 sm:mb-8">
+              <span className="inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-semibold tracking-widest bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
+                🔐 SECURE AUTH
               </span>
             </div>
 
             {/* Main card */}
-            <div className="bg-gradient-to-br from-[#111118] to-[#0f0f15] border border-indigo-500/20 rounded-2xl p-8 md:p-10 shadow-2xl shadow-indigo-600/20 backdrop-blur-sm animate-slide-up">
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+            <div className="bg-gradient-to-br from-[#111118] to-[#0f0f15] border border-indigo-500/20 rounded-2xl p-6 sm:p-8 md:p-10 shadow-2xl shadow-indigo-600/20 backdrop-blur-sm animate-slide-up">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 sm:mb-3">
                 Create account
               </h1>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Join Jervis and start tracking your expenses with AI assistance.
+              <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+                Join Jervis and start tracking your expenses with AI.
               </p>
 
               {error && (
-                <div className="text-red-300 text-sm mt-6 bg-red-500/15 border border-red-500/40 rounded-lg px-4 py-3 animate-slide-up">
+                <div className="text-red-300 text-xs sm:text-sm mt-5 sm:mt-6 bg-red-500/15 border border-red-500/40 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 animate-slide-up">
                   {error}
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <form
+                onSubmit={handleSubmit}
+                className="mt-6 sm:mt-8 space-y-4 sm:space-y-5"
+              >
                 <div className="space-y-2">
                   <label className="text-xs font-semibold tracking-wide text-gray-400 block">
-                    FULL NAME
+                    NAME
                   </label>
                   <div className="relative">
                     <User
-                      size={16}
+                      size={14}
                       className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
                     />
                     <input
@@ -111,18 +116,18 @@ const Signup = () => {
                       value={form.name}
                       onChange={handleChange}
                       required
-                      className="w-full bg-[#0a0a0f] border border-white/10 hover:border-white/15 focus:border-indigo-500/50 rounded-lg pl-11 pr-4 py-3 text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                      className="w-full bg-[#0a0a0f] border border-white/10 hover:border-white/15 focus:border-indigo-500/50 rounded-lg pl-11 pr-4 py-2.5 sm:py-3 text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-xs font-semibold tracking-wide text-gray-400 block">
-                    EMAIL ADDRESS
+                    EMAIL
                   </label>
                   <div className="relative">
                     <Mail
-                      size={16}
+                      size={14}
                       className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
                     />
                     <input
@@ -132,7 +137,7 @@ const Signup = () => {
                       value={form.email}
                       onChange={handleChange}
                       required
-                      className="w-full bg-[#0a0a0f] border border-white/10 hover:border-white/15 focus:border-indigo-500/50 rounded-lg pl-11 pr-4 py-3 text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                      className="w-full bg-[#0a0a0f] border border-white/10 hover:border-white/15 focus:border-indigo-500/50 rounded-lg pl-11 pr-4 py-2.5 sm:py-3 text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
                     />
                   </div>
                 </div>
@@ -143,7 +148,7 @@ const Signup = () => {
                   </label>
                   <div className="relative">
                     <Lock
-                      size={16}
+                      size={14}
                       className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
                     />
                     <input
@@ -153,20 +158,20 @@ const Signup = () => {
                       value={form.password}
                       onChange={handleChange}
                       required
-                      className="w-full bg-[#0a0a0f] border border-white/10 hover:border-white/15 focus:border-indigo-500/50 rounded-lg pl-11 pr-4 py-3 text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                      className="w-full bg-[#0a0a0f] border border-white/10 hover:border-white/15 focus:border-indigo-500/50 rounded-lg pl-11 pr-4 py-2.5 sm:py-3 text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
                     />
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 rounded-lg shadow-lg shadow-indigo-600/40 transition-all duration-200 mt-8"
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-2.5 sm:py-3 rounded-lg text-sm sm:text-base shadow-lg shadow-indigo-600/40 transition-all duration-200 mt-6 sm:mt-8"
                 >
-                  Create Account <ArrowRight size={16} />
+                  Create Account <ArrowRight size={14} sm:size={16} />
                 </button>
               </form>
 
-              <div className="flex items-center gap-3 my-7">
+              <div className="flex items-center gap-3 my-5 sm:my-7">
                 <div className="h-px bg-white/10 flex-1" />
                 <span className="text-xs text-gray-500 font-medium">OR</span>
                 <div className="h-px bg-white/10 flex-1" />
@@ -174,7 +179,7 @@ const Signup = () => {
 
               <a
                 href="http://localhost:5000/api/auth/google"
-                className="w-full flex items-center justify-center gap-2 border border-white/10 hover:border-white/20 hover:bg-white/5 text-gray-300 hover:text-white py-3 rounded-lg text-sm font-medium transition-all duration-200"
+                className="w-full flex items-center justify-center gap-2 border border-white/10 hover:border-white/20 hover:bg-white/5 text-gray-300 hover:text-white py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200"
               >
                 🔐 Continue with Google
               </a>

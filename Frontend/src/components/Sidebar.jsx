@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   LayoutDashboard,
   Wallet,
@@ -5,6 +6,8 @@ import {
   Settings,
   LogOut,
   Sparkles,
+  Menu,
+  X,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -17,11 +20,11 @@ const NAV_ITEMS = [
 
 const Sidebar = () => {
   const { logout } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
 
-  return (
-    <div className="w-64 shrink-0 bg-gradient-to-b from-[#0f0f15] to-[#0a0a0f] border-r border-indigo-500/10 flex flex-col h-screen sticky top-0 px-4 py-6">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-3 mb-10 group">
+  const navigation = (
+    <>
+      <div className="flex items-center gap-3 px-3 mb-8 md:mb-10 group">
         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/40 group-hover:shadow-indigo-500/60 transition-all">
           <Sparkles size={20} className="text-white" />
         </div>
@@ -33,11 +36,11 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 space-y-2">
         {NAV_ITEMS.map(({ icon: Icon, label, active }) => (
           <button
             key={label}
+            onClick={() => setIsOpen(false)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
               active
                 ? "bg-gradient-to-r from-indigo-600/30 to-purple-600/20 text-indigo-300 border border-indigo-500/40 shadow-lg shadow-indigo-500/10"
@@ -53,10 +56,8 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Divider */}
       <div className="h-px bg-white/5 my-4" />
 
-      {/* Logout Button */}
       <button
         onClick={logout}
         className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 border border-transparent hover:border-red-500/30"
@@ -64,7 +65,39 @@ const Sidebar = () => {
         <LogOut size={18} className="flex-shrink-0" />
         <span>Log Out</span>
       </button>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="md:hidden fixed top-4 right-4 z-50 flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-[#111118]/90 text-white shadow-lg shadow-indigo-500/10 backdrop-blur-sm transition-transform duration-200 hover:scale-105"
+        aria-label={isOpen ? "Close menu" : "Open menu"}
+      >
+        {isOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {isOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar overlay"
+          onClick={() => setIsOpen(false)}
+          className="md:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-[1px] transition-opacity duration-300 ease-out"
+        />
+      )}
+
+      <aside
+        className={[
+          "fixed inset-y-0 left-0 z-40 w-72 flex-col border-r border-indigo-500/10 bg-gradient-to-b from-[#0f0f15] to-[#0a0a0f] px-4 py-6 shadow-2xl shadow-black/50 transition-transform duration-300 ease-out",
+          isOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0",
+          "md:static md:flex md:w-64 md:translate-x-0 md:opacity-100 md:shrink-0 md:h-screen md:sticky md:top-0 md:shadow-none",
+        ].join(" ")}
+      >
+        {navigation}
+      </aside>
+    </>
   );
 };
 
