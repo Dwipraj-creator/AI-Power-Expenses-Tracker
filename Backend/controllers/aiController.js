@@ -12,7 +12,7 @@ exports.parseExpense = async (req, res) => {
       return res.status(400).json({ message: 'rawText is required' });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `You are an expense-parsing assistant. Extract structured data from this spoken sentence about a personal expense.
 
@@ -65,6 +65,9 @@ Rules:
     });
   } catch (err) {
     console.error('Gemini parse error:', err);
+    if (err.status === 429) {
+    return res.status(429).json({ message: 'Jervis is a bit busy right now — please try again in a moment.' });
+  }
     res.status(500).json({ message: 'AI parsing failed', error: err.message });
   }
 };
