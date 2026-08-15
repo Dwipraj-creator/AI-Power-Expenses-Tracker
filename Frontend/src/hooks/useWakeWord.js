@@ -1,22 +1,35 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 const WAKE_WORD = 'jarvis';
-const SILENCE_TIMEOUT = 1800; // ms of silence before a command is finalized
-const INACTIVITY_TIMEOUT = 60000; // ms of no wake word before session auto-stops
+const SILENCE_TIMEOUT = 1800;
+const INACTIVITY_TIMEOUT = 60000;
+const CONFIRM_WORDS = ['yes', 'save', 'save it', 'save this', 'confirm', 'ok save', 'okay save', 'add this'];
+const REJECT_WORDS = ['no', 'cancel', 'edit', 'redo', 'wrong', 'change it'];
 
-export const useWakeWord = ({ onWake, onCommand }) => {
+const matchesWholeWord = (transcript, words) =>
+  words.some((phrase) => new RegExp(`\\b${phrase}\\b`).test(transcript));
+
+export const useWakeWord = ({ onWake, onCommand, onConfirm }) => {
   const [sessionActive, setSessionActive] = useState(false);
-  const [status, setStatus] = useState('idle'); // 'idle' | 'waiting-for-wake' | 'capturing'
+  const [status, setStatus] = useState('idle');
 
   const recognitionRef = useRef(null);
   const silenceTimerRef = useRef(null);
   const inactivityTimerRef = useRef(null);
   const commandBufferRef = useRef('');
-  const sessionActiveRef = useRef(false); // mirrors sessionActive, safe to read inside callbacks
+  const sessionActiveRef = useRef(false);
+
+  // --- Refs that always hold the LATEST callbacks, so recognition.onresult never goes stale ---
+  const onWakeRef = useRef(onWake);
+  const onCommandRef = useRef(onCommand);
+  const onConfirmRef = useRef(onConfirm);
+
+  useEffect(() => { onWakeRef.current = onWake; }, [onWake]);
+  useEffect(() => { onCommandRef.current = onCommand; }, [onCommand]);
+  useEffect(() => { onConfirmRef.current = onConfirm; }, [onConfirm]);
 
   const isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 
-  // --- stopSession defined first since other functions depend on it ---
   const stopSession = useCallback(() => {
     recognitionRef.current?.stop();
     recognitionRef.current = null;
@@ -40,20 +53,26 @@ export const useWakeWord = ({ onWake, onCommand }) => {
       setStatus('waiting-for-wake');
       const finalText = commandBufferRef.current.trim();
       commandBufferRef.current = '';
-      if (finalText) onCommand?.(finalText);
+      if (finalText) onCommandRef.current?.(finalText); // read from ref, always current
     }, SILENCE_TIMEOUT);
-  }, [onCommand]);
+  }, []);
 
   const startCommandCapture = useCallback(
     (initialText = '') => {
       setStatus('capturing');
       commandBufferRef.current = initialText;
-      onWake?.();
-      resetInactivityTimer(); // real interaction happened — reset the auto-stop clock
+      onWakeRef.current?.(); // read from ref, always current
+      resetInactivityTimer();
       resetSilenceTimer();
     },
-    [onWake, resetInactivityTimer, resetSilenceTimer]
+    [resetInactivityTimer, resetSilenceTimer]
   );
+
+  const startConfirmationListening = useCallback(() => {
+    setStatus('confirming');
+    commandBufferRef.current = '__CONFIRMING__';
+    resetInactivityTimer();
+  }, [resetInactivityTimer]);
 
   const startSession = useCallback(() => {
     if (!isSupported) {
@@ -70,6 +89,25 @@ export const useWakeWord = ({ onWake, onCommand }) => {
     recognition.onresult = (event) => {
       const lastResult = event.results[event.results.length - 1];
       const transcript = lastResult[0].transcript.toLowerCase().trim();
+
+      if (commandBufferRef.current === '__CONFIRMING__') {
+        const cleaned = transcript.startsWith(WAKE_WORD)
+          ? transcript.slice(WAKE_WORD.length).trim()
+          : transcript;
+
+        const isReject = matchesWholeWord(cleaned, REJECT_WORDS);
+        const isConfirm = matchesWholeWord(cleaned, CONFIRM_WORDS);
+
+        if (isReject) {
+          commandBufferRef.current = '';
+          startCommandCapture('');
+        } else if (isConfirm) {
+          commandBufferRef.current = '';
+          setStatus('waiting-for-wake');
+          onConfirmRef.current?.(); // read from ref, always current — THE FIX
+        }
+        return;
+      }
 
       if (commandBufferRef.current || status === 'capturing') {
         commandBufferRef.current = transcript;
@@ -91,7 +129,6 @@ export const useWakeWord = ({ onWake, onCommand }) => {
     };
 
     recognition.onend = () => {
-      // browser auto-stops recognition periodically — restart if session is still meant to be active
       if (sessionActiveRef.current) {
         recognition.start();
       }
@@ -106,8 +143,15 @@ export const useWakeWord = ({ onWake, onCommand }) => {
   }, [isSupported, status, startCommandCapture, resetSilenceTimer, resetInactivityTimer, stopSession]);
 
   useEffect(() => {
-    return () => stopSession(); // cleanup if component unmounts while session is active
+    return () => stopSession();
   }, [stopSession]);
 
-  return { sessionActive, status, startSession, stopSession, isSupported };
+  return {
+    sessionActive,
+    status,
+    startSession,
+    stopSession,
+    isSupported,
+    startConfirmationListening,
+  };
 };

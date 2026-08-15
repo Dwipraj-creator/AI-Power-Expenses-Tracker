@@ -1,3 +1,5 @@
+import { Mic, MicOff } from 'lucide-react';
+
 const RAY_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
 
 const VoiceOrb = ({ status = 'idle', onClick }) => {
@@ -76,8 +78,12 @@ const VoiceOrb = ({ status = 'idle', onClick }) => {
           }`}
         />
 
-        {/* Center dot */}
-        <div className="relative w-4 h-4 rounded-full bg-white shadow-lg shadow-white/50" />
+       {/* Center icon */}
+{isActive ? (
+  <Mic size={30000} className="relative text-white drop-shadow-lg" />
+) : (
+  <MicOff size={22} className="relative text-gray-400" />
+)}
       </div>
     </button>
   );

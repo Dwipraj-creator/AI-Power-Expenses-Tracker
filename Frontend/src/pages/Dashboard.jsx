@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { speak, speakAck, stopSpeaking } from '../utils/speak';
 import {
   LineChart,
   Line,
@@ -10,7 +11,8 @@ import {
   YAxis,
   ResponsiveContainer,
   Tooltip,
-  Cell
+  Cell,
+  LabelList
 } from "recharts";
 import {
   ShieldCheck,
@@ -60,19 +62,43 @@ const Dashboard = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [lastCommand, setLastCommand] = useState("");
+const [parsedExpense, setParsedExpense] = useState(null);
+const [parsing, setParsing] = useState(false);
+const [parseError, setParseError] = useState("");
+const [savingVoiceExpense, setSavingVoiceExpense] = useState(false);
 
-  const { sessionActive, status, startSession, stopSession, isSupported } = useWakeWord({
-    onWake: () => {
-      // instant canned acknowledgment — voice output wired in a later step
-      console.log(`Yes, ${user?.name}?`);
-    },
-    onCommand: (text) => {
-      console.log("Captured command:", text);
-      setLastCommand(text);
-      // next step: send this to Gemini for parsing
-    },
-  });
 
+const { sessionActive, status, startSession, stopSession, isSupported, startConfirmationListening } = useWakeWord({
+  onWake: () => {
+    speakAck(user?.name); // was just a console.log before
+  },
+  onCommand: async (text) => {
+    setLastCommand(text);
+    setParsedExpense(null);
+    setParseError("");
+    setParsing(true);
+
+    try {
+      const res = await api.post("/ai/parse-expense", { rawText: text });
+      setParsedExpense(res.data);
+
+      // speak the parsed result back for confirmation
+      const desc = res.data.description ? ` for ${res.data.description}` : "";
+      speak(`You spent ₹${res.data.amount} on ${res.data.category}${desc}. Say save to confirm, or cancel to redo.`);
+
+      startConfirmationListening();
+    } catch (err) {
+      const msg = err.response?.data?.message || "Could not understand that as an expense.";
+      setParseError(msg);
+      speak(msg);
+    } finally {
+      setParsing(false);
+    }
+  },
+  onConfirm: () => {
+    handleSaveVoiceExpense();
+  },
+});
   const fetchExpenses = async () => {
     try {
       const res = await api.get("/expenses");
@@ -87,6 +113,37 @@ const Dashboard = () => {
   useEffect(() => {
     fetchExpenses();
   }, []);
+
+const handleSaveVoiceExpense = async () => {
+  if (!parsedExpense) return;
+  setSavingVoiceExpense(true);
+  try {
+    await api.post('/expenses', {
+      amount: parsedExpense.amount,
+      category: parsedExpense.category,
+      description: parsedExpense.description,
+      timestamp: parsedExpense.date,
+      inputMethod: 'voice',
+      rawText: parsedExpense.rawText,
+    });
+    fetchExpenses();
+    speak(`Saved! ₹${parsedExpense.amount} for ${parsedExpense.category}.`); // NEW
+    setParsedExpense(null);
+    setLastCommand('');
+  } catch (err) {
+    setParseError('Failed to save expense');
+    speak('Sorry, something went wrong saving that.'); // NEW
+  } finally {
+    setSavingVoiceExpense(false);
+  }
+};
+
+const handleCancelVoiceExpense = () => {
+  stopSpeaking()
+  setParsedExpense(null);
+  setLastCommand('');
+  setParseError('');
+};
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -215,13 +272,18 @@ const Dashboard = () => {
               <div className="bg-gradient-to-br from-[#111118] to-[#0f0f15] border border-indigo-500/30 rounded-2xl p-6 sm:p-10 flex flex-col items-center text-center shadow-2xl shadow-indigo-600/20 hover:border-indigo-500/50 transition-all duration-300">
 
 <div className="mb-4 sm:mb-6 scale-75 sm:scale-100 origin-top">
-  <VoiceOrb
-    status={status}
-    onClick={() => {
-      if (!isSupported) return;
-      sessionActive ? stopSession() : startSession();
-    }}
-  />
+<VoiceOrb
+  status={status}
+  onClick={() => {
+    if (!isSupported) return;
+    if (sessionActive) {
+      stopSpeaking();
+      stopSession();
+    } else {
+      startSession();
+    }
+  }}
+/>
 </div>
 <h2 className="text-lg sm:text-xl font-bold text-white mb-2">
   Voice Assistant
@@ -233,6 +295,8 @@ const Dashboard = () => {
     ? 'Tap the orb to start — then say "Jarvis" to give a command.'
     : status === "waiting-for-wake"
     ? 'Listening for "Jarvis"... (tap to stop)'
+    : status === "confirming"
+    ? 'Say "save" to confirm, or "cancel" to redo...'
     : "Listening to your command..."}
 </p>
 
@@ -241,6 +305,53 @@ const Dashboard = () => {
     Heard: "{lastCommand}"
   </p>
 )}
+
+{parsing && (
+  <p className="mt-3 text-xs text-gray-400 flex items-center gap-2">
+    <span className="w-3 h-3 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+    Understanding that...
+  </p>
+)}
+
+{parseError && (
+  <p className="mt-3 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+    {parseError}
+  </p>
+)}
+
+
+{parsedExpense && (
+  <div className="mt-4 w-full bg-[#0a0a0f] border border-indigo-500/30 rounded-xl p-4 text-left">
+    <p className="text-xs text-gray-400 mb-2">Does this look right?</p>
+    <div className="space-y-1 text-sm">
+      <p><span className="text-gray-500">Amount:</span> <span className="font-semibold">₹{parsedExpense.amount}</span></p>
+      <p><span className="text-gray-500">Category:</span> {parsedExpense.category}</p>
+      <p><span className="text-gray-500">Description:</span> {parsedExpense.description || "—"}</p>
+      <p><span className="text-gray-500">Date:</span> {new Date(parsedExpense.date).toLocaleString()}</p>
+    </div>
+
+    <div className="flex gap-2 mt-4">
+      <button
+        type="button"
+        onClick={handleSaveVoiceExpense}
+        disabled={savingVoiceExpense}
+        className="flex-1 flex items-center justify-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white text-sm font-semibold py-2 rounded-lg transition"
+      >
+        {savingVoiceExpense ? 'Saving...' : 'Save Expense'}
+      </button>
+      <button
+        type="button"
+        onClick={handleCancelVoiceExpense}
+        disabled={savingVoiceExpense}
+        className="px-4 py-2 rounded-lg text-sm font-medium border border-white/10 text-gray-400 hover:bg-white/5 transition disabled:opacity-50"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
+
+{/* your existing quick-add <form> stays right after this, unchanged */}
 
                 {/* Quick Add Form */}
                 <form
@@ -463,7 +574,7 @@ const Dashboard = () => {
                       }}
                       labelStyle={{ color: "#fff" }}
                     />
-                    <Bar
+                    <Bar 
                       dataKey="amount"
                       radius={[8, 8, 0, 0]}
                       isAnimationActive={true}
@@ -475,6 +586,14 @@ const Dashboard = () => {
                           fill={CATEGORY_COLORS[entry.category] || "#818cf8"}
                         />
                       ))}
+                      <LabelList
+    dataKey="amount"
+    position="top"
+    fill="#ffffff"
+    fontSize={11}
+    fontWeight={600}
+    formatter={(value) => `₹${value}`}
+    />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
