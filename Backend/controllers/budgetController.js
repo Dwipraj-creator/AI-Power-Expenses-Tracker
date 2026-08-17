@@ -1,5 +1,6 @@
 const Expense = require('../models/Expense');
 const User = require('../models/User');
+const { sendBudgetAlertEmail } = require('../utils/email');
 
 // GET /api/budget/status
 exports.getBudgetStatus = async (req, res) => {
@@ -49,6 +50,25 @@ exports.getBudgetStatus = async (req, res) => {
     } else if (projectedTotal > monthlyBudget) {
       status = 'warning'; // projected to slightly overshoot
     }
+
+    if (status === 'danger' || status === 'warning') {
+  const ALERT_COOLDOWN_HOURS = 12;
+  const now = new Date();
+  const lastAlert = user.lastBudgetAlertAt;
+  const hoursSinceLastAlert = lastAlert ? (now - lastAlert) / (1000 * 60 * 60) : Infinity;
+
+  if (hoursSinceLastAlert >= ALERT_COOLDOWN_HOURS) {
+    const subject = status === 'danger' ? '🚨 Budget Alert from Jervis' : '⚠️ Budget Warning from Jervis';
+    const message =
+      status === 'danger'
+        ? `You're on pace to spend ₹${Math.round(projectedTotal)} this month — over your ₹${monthlyBudget} budget!`
+        : `You're spending faster than planned. Projected ₹${Math.round(projectedTotal)} by month end.`;
+
+    sendBudgetAlertEmail(user.email, subject, message);
+    user.lastBudgetAlertAt = now;
+    await user.save();
+  }
+}
 
     res.json({
       monthlyBudget,
