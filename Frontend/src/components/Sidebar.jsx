@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Wallet,
@@ -12,15 +13,15 @@ import {
 import { useAuth } from "../context/AuthContext";
 
 const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: "Dashboard", active: true },
-  { icon: Wallet, label: "Expenses" },
-  { icon: Mic, label: "Voice Assistant" },
-  { icon: Settings, label: "Settings" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
 const Sidebar = () => {
   const { logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const navigation = (
     <>
@@ -37,23 +38,29 @@ const Sidebar = () => {
       </div>
 
       <nav className="flex-1 space-y-2">
-        {NAV_ITEMS.map(({ icon: Icon, label, active }) => (
-          <button
-            key={label}
-            onClick={() => setIsOpen(false)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-              active
-                ? "bg-gradient-to-r from-indigo-600/30 to-purple-600/20 text-indigo-300 border border-indigo-500/40 shadow-lg shadow-indigo-500/10"
-                : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10"
-            }`}
-          >
-            <Icon size={18} className="flex-shrink-0" />
-            <span>{label}</span>
-            {active && (
-              <div className="ml-auto w-2 h-2 rounded-full bg-indigo-400 shadow-lg shadow-indigo-400/50" />
-            )}
-          </button>
-        ))}
+        {NAV_ITEMS.map(({ icon: Icon, label, path }) => {
+          const active = location.pathname === path;
+          return (
+            <button
+              key={label}
+              onClick={() => {
+                navigate(path);
+                setIsOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                active
+                  ? "bg-gradient-to-r from-indigo-600/30 to-purple-600/20 text-indigo-300 border border-indigo-500/40 shadow-lg shadow-indigo-500/10"
+                  : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10"
+              }`}
+            >
+              <Icon size={18} className="flex-shrink-0" />
+              <span>{label}</span>
+              {active && (
+                <div className="ml-auto w-2 h-2 rounded-full bg-indigo-400 shadow-lg shadow-indigo-400/50" />
+              )}
+            </button>
+          );
+        })}
       </nav>
 
       <div className="h-px bg-white/5 my-4" />

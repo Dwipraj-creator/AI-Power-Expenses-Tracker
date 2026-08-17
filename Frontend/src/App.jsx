@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import OAuthSuccess from './pages/OAuthSuccess';
 import Dashboard from './pages/Dashboard';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
             }
           />
           <Route path="/" element={<Login />} />
+          <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
         </Routes>
       </BrowserRouter>
     </AuthProvider>
