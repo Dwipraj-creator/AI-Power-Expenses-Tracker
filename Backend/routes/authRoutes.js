@@ -1,7 +1,7 @@
 const express = require('express');
 const authRoute = express.Router();
 const protect = require('../middleware/auth');
-const { signup, login ,getMe } = require('../controllers/authController');
+const { signup, login ,getMe, updateProfile, changePassword } = require('../controllers/authController');
 
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
@@ -29,5 +29,8 @@ authRoute.get('/me', protect, getMe);
 
 authRoute.post('/signup', signup);
 authRoute.post('/login', login);
+
+authRoute.put("/profile",protect,updateProfile)
+authRoute.put("/password",protect,changePassword)
 
 module.exports = authRoute;
