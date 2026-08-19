@@ -80,3 +80,34 @@ exports.deleteExpense = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// GET /api/expenses/monthly-summary
+exports.getMonthlySummary = async (req, res) => {
+  try {
+    const summary = await Expense.aggregate([
+      { $match: { userId: req.userId } },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$timestamp' },
+            month: { $month: '$timestamp' },
+          },
+          total: { $sum: '$amount' },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { '_id.year': -1, '_id.month': -1 } },
+    ]);
+
+    const formatted = summary.map((entry) => ({
+      year: entry._id.year,
+      month: entry._id.month, // 1-12
+      total: entry.total,
+      count: entry.count,
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

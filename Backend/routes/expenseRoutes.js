@@ -7,10 +7,12 @@ const {
   getExpenseById,
   updateExpense,
   deleteExpense,
+  getMonthlySummary,
 } = require('../controllers/expenseController');
 
 expenseRoute.use(protect); // every route below requires a valid JWT
 
+expenseRoute.get("/monthly-summary",getMonthlySummary);
 expenseRoute.post('/', createExpense);
 expenseRoute.get('/', getExpenses);
 expenseRoute.get('/:id', getExpenseById);
