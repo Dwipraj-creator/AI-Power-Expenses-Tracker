@@ -9,12 +9,14 @@ import {
   Sparkles,
   Menu,
   X,
+  Calendar
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Settings, label: "Settings", path: "/settings" },
+   { icon: Calendar, label: "Calendar", path: "/calendar" },
 ];
 
 const Sidebar = () => {
