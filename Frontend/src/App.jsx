@@ -1,12 +1,13 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import OAuthSuccess from './pages/OAuthSuccess';
-import Dashboard from './pages/Dashboard';
-import Settings from './pages/Settings';
-import CalendarPage from './pages/Calendar';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import OAuthSuccess from "./pages/OAuthSuccess";
+import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
+import CalendarPage from "./pages/Calendar";
+import HistoryPage from "./pages/History";
 
 function App() {
   return (
@@ -25,15 +26,30 @@ function App() {
             }
           />
           <Route path="/" element={<Login />} />
-          <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
           <Route
-  path="/calendar"
-  element={
-    <ProtectedRoute>
-      <CalendarPage />
-    </ProtectedRoute>
-  }
-/>
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/calendar"
+            element={
+              <ProtectedRoute>
+                <CalendarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <HistoryPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
